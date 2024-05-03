@@ -25,7 +25,7 @@ This folder is referred to as $OPENHAB\_CONF in this page, and the location of t
 - via mounting the files shares from the server to your client-PC.
 In the main UI as an admin you can go to _Help & About_ and will have the different folder locations under _Technical information_.
   - the exact configuration of the shares can be found on your server at [/etc/samba/smb.conf](https://github.com/openhab/openhabian/blob/main/includes/smb.conf).
-- Use the share _openHAB_-conf when mounting it from Windows or MacOS
+- Use the share _openHAB_-conf when mounting it from Windows or macOS
 
 **Link the openHAB share in Windows**
 
@@ -79,60 +79,71 @@ Also view ![youtube](../images/blockly/youtube-logo-small.png) [Creating a Block
   ![blockly-edit-screen](../images/blockly/blockly-edit-screen.png)
 - you can now click the ![toolbox-submenu](../images/blockly/blockly-arrow.png) to access all openHAB Blocks.
 - Drag and Drop the blocks to the white area
-- Press `Ctrl-s` (Windows) or `Command-s` (MacOS) to save your rule
-- Press `Ctrl-r` (Windows) or `Command-r` (MacOS) to directly run your rule with the trigger
-- Press `Ctrl-d` (Windows) or `Command-d` (MacOS) to disable / enable your rule.
+- Press `Ctrl-s` (Windows) or `Command-s` (macOS) to save your rule
+- Press `Ctrl-r` (Windows) or `Command-r` (macOS) to directly run your rule with the trigger
+- Press `Ctrl-d` (Windows) or `Command-d` (macOS) to disable / enable your rule.
 See the following video on ![youtube](../images/blockly/youtube-logo-small.png) [How to disable Rules](https://youtu.be/hSRfooBKn9A?t=1668)
 - **Click on** ![showblock](../images/blockly/blockly-workspace-showblocks.png) **on the lower right of the bottom toolbar to see the generated code** and will transition to ![showcode](../images/blockly/blockly-workspace-showcode.png)(click again to come back to the blocks).
 
 More about the topic of code generation can be viewed at ![youtube](../images/blockly/youtube-logo-small.png) [Blockly as an ECMA-Script code generator](https://youtu.be/EdllUlJ7p6k?t=1739)
 
-### Block context menu
+### Panning and Zooming
 
-It should also be mentioned that each of the blocks do have a context sensitive menu which appears upon a right click on the block itself.
+You can move around Blockly's workspace by clicking and dragging on the empty space, or by using two fingers on a touch screen or a trackpad.
 
-![blockly-context.png](../images/blockly/blockly-contextmenu.png)
+Zooming can be done using either of these methods:
 
-#### **Cross-Rule-Copy/Paste**
+- By pinching or stretching on a touch screen or a trackpad.
+- By holding <kbd>Ctrl</kbd> while dragging or moving with two fingers on the touch screen or trackpad.
+- With the on-screen controls:
+  
+  ![workspace-zoom-controls](../images/blockly/blockly-zoom.png)
 
-Sometimes you may want to copy some blocks from one rule to another.
-This is what _Cross-Rule-Copy/Paste_ is for.
-Just mark the block(s) you want to copy, click on _Cross-Rule-Copy_ and then in the destination rule open the context menu and click on _Cross-Rule-Paste_.
+### Context Menu
 
-![cross-rule-copy](../images/blockly/blockly-cross-rule-copy.png)
+A context menu is available when right-clicking on a block.
 
-Note that you cannot select several blocks at once but only one block to copy.
+![Blockly Context Menu](../images/blockly/blockly-contextmenu.png)
 
-::: tip Copy multiple blocks
+Right-clicking on an empty area in the workspace will pop up a slightly different context menu.
+In particular, `Clean up Blocks` will automatically move and arrange your blocks neatly.
 
-A way to copy multiple blocks at once is to copy a parent block, e.g. a loop block, that contains all the blocks you want to copy together.
-If you want to copy a number of connected blocks at once that do not have a parent block, there is nice trick to do that anyway: drag a function block into the workspace of the source rule, add the blocks to be copied into that function block, copy that function block and then paste it in the destination rule.
-Then in the destination rule just remove the function block that helped you to copy the inner blocks.
+### Selecting Blocks
 
-:::
+Click on a block to select it.
 
-Copy and Paste in Action:
+You can select multiple blocks by holding the <kbd>Shift</kbd> key while clicking on other blocks.
+Alternatively, hold down the <kbd>Shift</kbd> key, click on an empty area and start dragging to select the blocks within the selection rectangle.
 
-![copy-and-paste-in-action](../images/blockly/blockly-cross-rule-copy-and-paste.gif)
+Child blocks are automatically selected when their parent is selected.
+
+Once selected, the blocks can be copied, duplicated, deleted, or moved around.
+
+### Copying & Pasting
+
+Copy-pasting can be used as a quick way to duplicate a set of blocks within the same script.
+You can also copy a set of blocks into your clipboard, and paste them into another script.
+
+### Other Operations
 
 - **Duplicate**: Clones the block
 - **Add comment**: Adds a comment to the block
 - **Inline Inputs** / External inputs: Switches between horizontal or vertical alignment of inputs
 
-Inline:
-![inline-inputs](../images/blockly/blockly-inputs-inline.png)
+  Inline:
+  ![inline-inputs](../images/blockly/blockly-inputs-inline.png)
 
-External:
-![external-inputs](../images/blockly/blockly-inputs-external.png)
+  External:
+  ![external-inputs](../images/blockly/blockly-inputs-external.png)
 
 - **Collapse (expand) block**: Shrinks the block to get a better overview
 
-Normal block view:
-![expanded-block](../images/blockly/blockly-expanded.png)
+  Normal block view:
+  ![expanded-block](../images/blockly/blockly-expanded.png)
 
-Collapsed view:
+  Collapsed view:
 
-![collapsed-block](../images/blockly/blockly-collapsed.png)
+  ![collapsed-block](../images/blockly/blockly-collapsed.png)
 
 - **Disable (enable) block**: Disables the block, so no code is generated and its functionality switched off
 - **Delete**: delete the blocks (this can be reverted via Command/Ctrl-Z)
@@ -144,14 +155,6 @@ Therefore, a search functionality has been provided by pressing Cmd/Ctrl-F which
 After pressing _Enter_ all found blocks that contain the search term are marked in black.
 
 ![blockly-search](../images/blockly/blockly-search.png)
-
-### Zoom the workspace
-
-The following controls allow the workspace to be zoomed:
-
-![workspace-zoom-controls](../images/blockly/blockly-zoom.png)
-
-Pinching on a tablet or a touch bar also allows convenient zooming of the workspace.
 
 ## Use Frontail for viewing log files
 

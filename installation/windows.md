@@ -19,6 +19,8 @@ Please be sure you have installed the required supporting applications as descri
 
 ### Set the `JAVA_HOME` System Environment Variable in Windows
 
+Note: If you have installed Zulu Java 17 (highly recommended for OH 4.x) you may skip this step because the JAVA_HOME environment variable was created during installation.
+
 - Navigate to: Control Panel ➡️ System and Security ➡️ System ➡️ Advanced System Settings ➡️ Environment Variables ➡️ System Variables
 - Create a New System Variable named JAVA_HOME (or update the existing one) to match the installation directory of the Java Platform chosen and installed in the step [Prerequisites]({{base}}/installation/index.html#prerequisites).
 
@@ -124,11 +126,16 @@ By installing the openHAB process as a service in Windows, you can:
     wrapper.java.additional.11=-Dopenhab.userdata="%OPENHAB_HOME%\userdata"
     wrapper.java.additional.12=-Dopenhab.logdir="%OPENHAB_USERDATA%\logs"
     wrapper.java.additional.13=-Dfelix.cm.dir="%OPENHAB_HOME%\userdata\config"
-    wrapper.java.additional.14=-Dorg.osgi.service.http.port=8080
-    wrapper.java.additional.15=-Dorg.osgi.service.http.port.secure=8443
-    wrapper.java.additional.16=-Djava.util.logging.config.file="%KARAF_ETC%\java.util.logging.properties"
-    wrapper.java.additional.17=-Dkaraf.logs="%OPENHAB_LOGDIR%"
-    wrapper.java.additional.18=-Dfile.encoding=UTF-8
+    wrapper.java.additional.14=-Djdk.util.zip.disableZip64ExtraFieldValidation=true
+    wrapper.java.additional.15=-Djetty.host=0.0.0.0
+    wrapper.java.additional.16=-Djetty.http.compliance=RFC2616
+    wrapper.java.additional.17=-Dorg.apache.cxf.osgi.http.transport.disable=true
+    wrapper.java.additional.18=-Dorg.osgi.service.http.port=8080
+    wrapper.java.additional.19=-Dorg.osgi.service.http.port.secure=8443
+    wrapper.java.additional.20=-Djava.util.logging.config.file="%KARAF_ETC%\java.util.logging.properties"
+    wrapper.java.additional.21=-Dkaraf.logs="%OPENHAB_LOGDIR%"
+    wrapper.java.additional.22=-Djava.awt.headless=true
+    wrapper.java.additional.23=-Dfile.encoding=UTF-8
     wrapper.java.maxmemory=512
 
     # Wrapper Logging Properties
