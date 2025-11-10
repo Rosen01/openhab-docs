@@ -50,7 +50,14 @@ module.exports = [
       ['installation/linux', 'Linux'],
       ['installation/windows', 'Windows'],
       ['installation/macos', 'macOS'],
-      'installation/openhabian',
+      { title: 'openHABian',
+        children: [
+          'installation/openhabian',
+          'installation/openhabian-troubleshooting',
+          'installation/openhabian-backup',
+          'installation/openhabian-exim',
+        ]
+      },
       'installation/armbian',
       'installation/docker',
       'installation/synology',
@@ -102,6 +109,7 @@ module.exports = [
               ['configuration/blockly/rules-blockly-standard-ext', 'Standard Extensions'],
             ]
           },
+          'configuration/yaml',
         ]
       },
       'configuration/actions',
@@ -154,7 +162,14 @@ module.exports = [
       'ui/sitemaps',
       { title: 'Pages',
         children: [
-          'ui/layout-pages',
+          { title: 'Layout Pages',
+            collapsable: true,
+            path: '/docs/ui/layout-pages',
+            children: [
+              ['/docs/ui/layout-pages-responsive', 'Responsive Layouts'],
+              ['/docs/ui/layout-pages-fixed', 'Fixed Layouts']
+            ]
+          },
           'ui/map-pages',
           'ui/floorplan-pages',
           'ui/tabbed-pages',
@@ -171,8 +186,9 @@ module.exports = [
       },
       ['ui/components/', 'Component Reference'],
       'ui/habpanel/habpanel',
-      ['apps/android', 'Android App'],
+      'apps/android',
       'apps/ios',
+      'apps/garmin/',
       'apps/windows'
     ]
   },
@@ -184,7 +200,6 @@ module.exports = [
       ['ecosystem/google-assistant/', 'Google Assistant'],
       ['../addons/integrations/homekit/', 'Apple HomeKit'],
       // ['ecosystem/ifttt/', 'IFTTT'], // Temporary remove until service gets reactivated
-      ['ecosystem/mycroft/', 'Mycroft.AI'],
       ['../addons/integrations/openhabcloud/', 'openHAB Cloud'],
     ]
   },
@@ -206,6 +221,16 @@ module.exports = [
     collapsable: true,
     children: [
       ['developer/', 'Overview & Introduction'],
+      { title: 'IDEs',
+        collapsable: true,
+        children: [
+          'developer/ide/eclipse',
+          'developer/ide/intellij',
+          'developer/ide/vscode',
+          'developer/ide/generic',
+          'developer/ide/karaf',
+        ]
+      },
       'developer/guidelines',
       'developer/addons/',
       'developer/bindings/',

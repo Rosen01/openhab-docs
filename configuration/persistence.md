@@ -156,8 +156,8 @@ The syntax is as follows:
 
 ```java
 Items {
-    <itemlist1> [-> "<alias1>"] : [strategy = <strategy1>, <strategy2>, ...] [filter = <filter1>, <filter2>, ...]
-    <itemlist2> [-> "<alias2>"] : [strategy = <strategyX>, <strategyY>, ...]
+    <itemlist1> : strategy = <strategy1>, <strategy2>, ... [filter = <filter1>, <filter2>, ...]
+    <itemlist2> : strategy = <strategyX>, <strategyY>, ...
     ...
 
 }
@@ -167,12 +167,34 @@ where `<itemlist>` is a comma-separated list consisting of one or more of the fo
 
 - `*` - this line should apply to all items in the system
 - `<itemName>` a single Item identified by its name. This Item can be a group Item.  But note that only the group value will be persisted.  The value of the individual group members will not be persisted using this option.
+- `!<itemName>` a single Item or group Item identified by its name, to be excluded from persistence defined by the other elements in this comma-separated `<itemList>`.
 - `<groupName>*` - all members of this group will be persisted, but not the group itself.
   Optionally, an alias may be provided if the persistence service requires special names (e.g. a table to be used in a database, a feed id for an IoT service, etc.)
   Note that `*` is NOT a wildcard match character in this context.
-
+- `!<groupName>*` all members of this group, but not the group itself, to be excluded from persistence defined by the other elements in this comma-separated `<itemList>`.
 The entries are additive.
 This means if one Item appears in more than one `<itemlist>` either directly or indirectly (e.g. `*` which includes all Items or as a member of a Group used in `<groupName>*`), all the strategies strategies listed on all those lines apply to that Item.
+In the same way, an Item defined by a `!<itemName>` or `!<groupName>*` will be excluded after all additive rules have been applied.
+
+For each `<itemlist>`, you need to define one or more strategies to apply.
+You can use the predefined strategies, or the strategies defined in the `Strategies` section.
+Defining filters is optional.
+
+### Aliases
+
+This section defines alternative names for items that will be used in storage by the persistence service.
+The syntax is as follows:
+
+```java
+Aliases {
+    <itemName1> -> <alias1>
+    <itemName2> -> <alias2>
+    ...
+
+}
+```
+
+Note that aliases should be unique and should not have the same name as an existing item that is also stored in the persistence service.
 
 Below you will find a complete example persistence configuration file:
 
@@ -198,6 +220,9 @@ Items {
 
         // additionally, persist all temperature and weather values every hour
         Temperature*, Weather* : strategy = everyHour
+
+        // persist all items every day, except items in the weather group and the cellar temperature
+        *, !Weather*, !CellarTemperature: strategy = everyDay
 }
 ```
 
@@ -232,53 +257,152 @@ Example:
 
 The statement
 
-`Temperature.historicState(now.minusDays(1))`
+`Temperature.persistedState(now.minusDays(1))`
 
 will return the state of the Item "Temperature" from 24 hours ago.
 You can easily imagine that you can implement very powerful rules using this feature.
 
 Here is the full list of available persistence extensions:
 
-| Persistence Extension                                   | Description                                                                                                                                                                |
-|---------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `<item>.persist`                                        | Persists the current State of the Item                                                                                                                                     |
-| `<item>.lastUpdate`                                     | Returns the last timestamp a given Item was persisted                                                                                                                      |
-| `<item>.historicState(ZonedDateTime)`                   | Retrieves the State of an Item at a certain point in time (returns HistoricItem)                                                                                           |
-| `<item>.changedSince(ZonedDateTime)`                    | Checks if the State of the Item has (ever) changed since a certain point in time                                                                                           |
-| `<item>.changedBetween(ZonedDateTime, ZonedDateTime)`   | Checks if the State of the Item has (ever) changed between certain points in time                                                                                          |
-| `<item>.updatedSince(ZonedDateTime)`                    | Checks if the state of the Item has been updated since a certain point in time                                                                                             |
-| `<item>.updatedBetween(ZonedDateTime, ZonedDateTime)`   | Checks if the state of the Item has been updated between certain points in time                                                                                            |
-| `<item>.maximumSince(ZonedDateTime)`                    | Gets the maximum value of the State of a persisted Item since a certain point in time (returns HistoricItem)                                                               |
-| `<item>.maximumBetween(ZonedDateTime, ZonedDateTime)`   | Gets the maximum value of the State of a persisted Item between certain points in time (returns HistoricItem)                                                              |
-| `<item>.minimumSince(ZonedDateTime)`                    | Gets the minimum value of the State of a persisted Item since a certain point in time (returns HistoricItem)                                                               |
-| `<item>.minimumBetween(ZonedDateTime, ZonedDateTime)`   | Gets the minimum value of the State of a persisted Item between certain points in time (returns HistoricItem)                                                              |
-| `<item>.averageSince(ZonedDateTime)`                    | Gets the average value of the State of a persisted Item since a certain point in time. This method uses a time-weighted average calculation (see example below)            |
-| `<item>.averageBetween(ZonedDateTime, ZonedDateTime)`   | Gets the average value of the State of a persisted Item betwen certain points in time. This method uses a time-weighted average calculation (see example below)            |
-| `<item>.deltaSince(ZonedDateTime)`                      | Gets the difference in value of the State of a given Item since a certain point in time                                                                                    |
-| `<item>.deltaBetween(ZonedDateTime, ZonedDateTime)`     | Gets the difference in value of the State of a given Item between certain points in time                                                                                   |
-| `<item>.evolutionRate(ZonedDateTime)`                   | Gets the evolution rate of the state of a given Item since a certain point in time (returns DecimalType)                                                                   |
-| `<item>.evolutionRate(ZonedDateTime, ZonedDateTime)`    | Gets the evolution rate of the state of a given Item between certain points in time (returns DecimalType)                                                                  |
-| `<item>.deviationSince(ZonedDateTime)`                  | Gets the standard deviation of the state of the given Item since a certain point in time (returns DecimalType)                                                             |
-| `<item>.deviationBetween(ZonedDateTime, ZonedDateTime)` | Gets the standard deviation of the state of the given Item between certain points in time (returns DecimalType)                                                            |
-| `<item>.varianceSince(ZonedDateTime)`                   | Gets the variance of the state of the given Item since a certain point in time (returns DecimalType)                                                                       |
-| `<item>.varianceBetween(ZonedDateTime, ZonedDateTime)`  | Gets the variance of the state of the given Item between certain point sin time (returns DecimalType)                                                                      |
-| `<item>.previousState()`                                | Gets the previous State of a persisted Item (returns HistoricItem)                                                                                                         |
-| `<item>.previousState(true)`                            | Gets the previous State of a persisted Item, skips Items with equal State values and searches the first Item with State not equal the current State (returns HistoricItem) |
-| `<item>.sumSince(ZonedDateTime)`                        | Gets the sum of the previous States of a persisted Item since a certain point in time                                                                                      |
-| `<item>.sumBetween(ZonedDateTime, ZonedDateTime)`       | Gets the sum of the previous States of a persisted Item between certain points in time                                                                                     |
+| Persistence Extension                                           | Description                                                                                                                                                                      |
+|-----------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `<item>.persist()`                                              | Persists the current State of the Item                                                                                                                                           |
+| `<item>.persist(ZonedDateTime, State)`                          | Persists a past or future state for the Item                                                                                                                                     |
+| `<item>.persist(TimeSeries)`                                    | Persists a TimeSeries with one or multiple values to the Item                                                                                                                    |
+| `<item>.persistedState(ZonedDateTime)`                          | Retrieves the State of an Item at a certain point in time (returns HistoricItem)                                                                                                 |
+| `<item>.lastUpdate()`                                           | Returns the timestamp of the last Item update, null if current Item state different from last persisted state                                                                    |
+| `<item>.nextUpdate()`                                           | Returns the timestamp of the next Item update if future states have been persisted                                                                                               |
+| `<item>.lastChange()`                                           | Returns the timestamp of the last Item change, null if current Item state different from last persisted state                                                                    |
+| `<item>.nextChange()`                                           | Returns the timestamp of the next Item change if future states have been persisted                                                                                               |
+| `<item>.previousState()`                                        | Gets the previous State of a persisted Item (returns HistoricItem)                                                                                                               |
+| `<item>.previousState(true)`                                    | Gets the previous State of a persisted Item, skips Items with equal State values and searches the first Item with State not equal the current State (returns HistoricItem)       |
+| `<item>.nextState()`                                            | Gets the next State of a persisted Item if future states have been persisted (returns HistoricItem)                                                                              |
+| `<item>.nextState(true)`                                        | Gets the next State of a persisted Item, skips Items with equal State values and searches the first Item with State not equal the current State (returns HistoricItem)           |
+| `<item>.changedSince(ZonedDateTime)`                            | Checks if the State of the Item has (ever) changed since a certain point in time                                                                                                 |
+| `<item>.changedUntil(ZonedDateTime)`                            | Checks if the State of the Item will change by a certain future point in time                                                                                                    |
+| `<item>.changedBetween(ZonedDateTime, ZonedDateTime)`           | Checks if the State of the Item has (ever) changed between certain points in time                                                                                                |
+| `<item>.updatedSince(ZonedDateTime)`                            | Checks if the state of the Item has been updated since a certain point in time                                                                                                   |
+| `<item>.updatedUntil(ZonedDateTime)`                            | Checks if the state of the Item will be updated by a certain future point in time                                                                                                |
+| `<item>.updatedBetween(ZonedDateTime, ZonedDateTime)`           | Checks if the state of the Item has been updated between certain points in time                                                                                                  |
+| `<item>.maximumSince(ZonedDateTime)`                            | Gets the maximum value of the State of a persisted Item since a certain point in time (returns HistoricItem)                                                                     |
+| `<item>.maximumUntil(ZonedDateTime)`                            | Gets the maximum value of the State of a persisted Item until a certain future point in time (returns HistoricItem)                                                              |
+| `<item>.maximumBetween(ZonedDateTime, ZonedDateTime)`           | Gets the maximum value of the State of a persisted Item between certain points in time (returns HistoricItem)                                                                    |
+| `<item>.minimumSince(ZonedDateTime)`                            | Gets the minimum value of the State of a persisted Item since a certain point in time (returns HistoricItem)                                                                     |
+| `<item>.minimumUntil(ZonedDateTime)`                            | Gets the minimum value of the State of a persisted Item until a certain future point in time (returns HistoricItem)                                                              |
+| `<item>.minimumBetween(ZonedDateTime, ZonedDateTime)`           | Gets the minimum value of the State of a persisted Item between certain points in time (returns HistoricItem)                                                                    |
+| `<item>.medianSince(ZonedDateTime)`                             | Gets the median value of the State of a persisted Item since a certain point in time (returns State)                                                                             |
+| `<item>.medianUntil(ZonedDateTime)`                             | Gets the median value of the State of a persisted Item until a certain point in time (returns State)                                                                             |
+| `<item>.medianBetween(ZonedDateTime, ZonedDateTime)`            | Gets the median value of the State of a persisted Item between certain points in time (returns State)                                                                            |
+| `<item>.deltaSince(ZonedDateTime)`                              | Gets the difference in value of the State of a given Item since a certain point in time (returns State)                                                                          |
+| `<item>.deltaUntil(ZonedDateTime)`                              | Gets the difference in value of the future State of a given Item with the current State (returns State)                                                                          |
+| `<item>.deltaBetween(ZonedDateTime, ZonedDateTime)`             | Gets the difference in value of the State of a given Item between certain points in time (returns State)                                                                         |
+| `<item>.evolutionRateSince(ZonedDateTime)`                      | Gets the evolution rate of the state of a given Item since a certain point in time (returns DecimalType)                                                                         |
+| `<item>.evolutionRateUntil(ZonedDateTime)`                      | Gets the evolution rate of the state of a given Item until a certain point in time (returns DecimalType)                                                                         |
+| `<item>.evolutionRateBetween(ZonedDateTime, ZonedDateTime)`     | Gets the evolution rate of the state of a given Item between certain points in time (returns DecimalType)                                                                        |
+| `<item>.sumSince(ZonedDateTime)`                                | Gets the sum of the previous States of a persisted Item since a certain point in time (returns State)                                                                            |
+| `<item>.sumUntil(ZonedDateTime)`                                | Gets the sum of the future States of a persisted Item until a certain point in time (returns State)                                                                              |
+| `<item>.sumBetween(ZonedDateTime, ZonedDateTime)`               | Gets the sum of the previous States of a persisted Item between certain points in time (returns State)                                                                           |
+| `<item>.countSince(ZonedDateTime)`                              | Gets the number of persisted States of an Item since a certain point in time                                                                                                     |
+| `<item>.countUntil(ZonedDateTime)`                              | Gets the number of persisted States of an Item until a certain point in time                                                                                                     |
+| `<item>.countBetween(ZonedDateTime, ZonedDateTime)`             | Gets the number of persisted States of an Item between certain points in time                                                                                                    |
+| `<item>.countStateChangesSince(ZonedDateTime)`                  | Gets the number of changes in persisted States of an Item since a certain point in time                                                                                          |
+| `<item>.countStateChangesUntil(ZonedDateTime)`                  | Gets the number changes in of persisted States of an Item until a certain point in time                                                                                          |
+| `<item>.countStateChangesBetween(ZonedDateTime, ZonedDateTime)` | Gets the number of changes in persisted States of an Item between certain points in time                                                                                         |
+| `<item>.riemannSumSince(ZonedDateTime)`                         | Gets the Riemann sum of the States of a persisted Item since a certain point in time. This method uses a time-weighted calculation (see [below](#time-weighted-calculations---riemann-sums)) (returns State) |
+| `<item>.riemannSumUntil(ZonedDateTime)`                         | Gets the Riemann sum of the States of a persisted Item until a certain point in time. This method uses a time-weighted calculation (see [below](#time-weighted-calculations---riemann-sums)) (returns State) |
+| `<item>.riemannSumBetween(ZonedDateTime, ZonedDateTime)`        | Gets the Riemann sum of the States of a persisted Item between certain points in time. This method uses a time-weighted calculation (see [below](#time-weighted-calculations---riemann-sums)) (returns State) |
+| `<item>.averageSince(ZonedDateTime)`                            | Gets the average value of the State of a persisted Item since a certain point in time. This method uses a time-weighted calculation (see [below](#time-weighted-calculations---riemann-sums)) (returns State) |
+| `<item>.averageUntil(ZonedDateTime)`                            | Gets the average value of the State of a persisted Item until a certain point in time. This method uses a time-weighted calculation (see [below](#time-weighted-calculations---riemann-sums)) (returns State) |
+| `<item>.averageBetween(ZonedDateTime, ZonedDateTime)`           | Gets the average value of the State of a persisted Item between certain points in time. This method uses a time-weighted calculation (see [below](#time-weighted-calculations---riemann-sums)) (returns State) |
+| `<item>.varianceSince(ZonedDateTime)`                           | Gets the variance of the state of the given Item since a certain point in time. This method uses a time-weighted calculation (see [below](#time-weighted-calculations---riemann-sums)) (returns State) |
+| `<item>.varianceUntil(ZonedDateTime)`                           | Gets the variance of the state of the given Item until a certain future point in time. This method uses a time-weighted calculation (see [below](#time-weighted-calculations---riemann-sums)) (returns State) |
+| `<item>.varianceBetween(ZonedDateTime, ZonedDateTime)`          | Gets the variance of the state of the given Item between certain points in time. This method uses a time-weighted calculation (see [below](#time-weighted-calculations---riemann-sums)) (returns State) |
+| `<item>.deviationSince(ZonedDateTime)`                          | Gets the standard deviation of the state of the given Item since a certain point in time. This method uses a time-weighted calculation (see [below](#time-weighted-calculations---riemann-sums)) (returns State) |
+| `<item>.deviationUntil(ZonedDateTime)`                          | Gets the standard deviation of the state of the given Item until a certain point in time. This method uses a time-weighted calculation (see [below](#time-weighted-calculations---riemann-sums)) (returns State) |
+| `<item>.deviationBetween(ZonedDateTime, ZonedDateTime)`         | Gets the standard deviation of the state of the given Item between certain points in time. This method uses a time-weighted calculation (see [below](#time-weighted-calculations---riemann-sums)) (returns State) |
+| `<item>.getAllStatesSince(ZonedDateTime)`                       | Gets all persisted State changes for an Item since a certain point in time (returns Iterable<HistoricItem>)                                                                      |
+| `<item>.getAllStatesUntil(ZonedDateTime)`                       | Gets all persisted State changes for an Item until a certain point in time (returns Iterable<HistoricItem>)                                                                      |
+| `<item>.getAllStatesBetween(ZonedDateTime, ZonedDateTime)`      | Gets all persisted State changes for an Item between certain points in time (returns Iterable<HistoricItem>)                                                                     |
+| `<item>.removeAllStatesSince(ZonedDateTime)`                    | Removes all persisted States since a certain point in time                                                                                                                       |
+| `<item>.removeAllStatesUntil(ZonedDateTime)`                    | Removes all future persisted States for an Item until a certain point in time                                                                                                    |
+| `<item>.removeAllStatesBetween(ZonedDateTime, ZonedDateTime)`   | Removes all persisted States for an Item between certain points in time                                                                                                          |
 
 These extensions use the [default persistence service](#default-persistence-service).
 You may specify a different persistence service by appending a String as an optional additional parameter at the end of the extension.
+
+Some persistence services may not support persisting to other points in time than the current time and removing persisted States, therefore not all actions may be supported for all persistence services.
+
+Some extensions return a HistoricItem object.
+It represents the state of a persisted item at a certain point in time.
+The most useful methods of the HistoricItem object returned by some queries, are `.getState()` and `.getTimestamp()`
+
+### Time-weighted calculations - Riemann Sums
+
+A number of extensions (`riemannSum`, `average`, `variance` and `deviation`) use time-weighted calculations.
+A Riemann Sum is an approximation of the integral of a continuous function represented by discrete values.
+Each of the following extensions uses a Riemann Sum as a base for its calculation:
+
+- `average` = `riemannSum` / total duration
+- `variance` = sum(value - `average`)^2 / count(values)
+- `deviation` = sqrt(`variance`)
+
+The `riemannSum` calculation is especially useful when doing calculations such as electricity consumption or production over time (e.g. in kWh) from momentary power readings (e.g. in W).
+
+The `riemannSum` extension differs from the `sum` extension in that `sum` will just add values without considering the time interval between values.
+It will therefore result in a sum with the same unit as the individual values.
+Each value will have the same weight in the calculation.
+
+There are multiple types of approximation possible when calculating Riemann Sums.
+The type can be explicitly set on all extensions doing time-weighted calculations (`riemannSum`, `average`, `variance` and `deviation`) with an extra parameter at the end (before the persistence service parameter).
+Possible values for the type are:
+
+| `Riemann.LEFT`                                    | `Riemann.RIGHT`                                   | `Riemann.TRAPEZOIDAL`                             | `Riemann.MIDPOINT`                                |
+|---------------------------------------------------|---------------------------------------------------|---------------------------------------------------|---------------------------------------------------|
+| ![left](images/riemann-left.svg)                  | ![right](images/riemann-right.svg)                | ![trapezoidal](images/riemann-trapezoidal.svg)    | ![midpoint](images/riemann-midpoint.svg)          |
+
+- `RiemannType.LEFT`: takes the persisted value at the start of the bucket to represent the value for the whole bucket.
+This is most useful when there is a `everyChange` persistence strategy and the values represent a step function. An example would be dynamic electricity rates, as they will effectively be constant inside the bucket.
+- `RiemannType.RIGHT`: takes the persisted value at the end of the bucket as an approximation for the value in the full preceding bucket.
+- `RiemannType.TRAPEZOIDAL`: takes the average of the persisted value at the start end the end of the bucket, effectively making a linear interpolation to fit the curve.
+This type is most useful when the real values change continuously. It can be used for any persistence strategy and any interval.
+- `RiemannType.MIDPOINT`: uses 3 persisted values and uses the middle of the values as an approximation for the value halfway in the interval between the middle of point 1 and 2 and the middle of point 2 and 3.
+This is the best approximation when the real values change continuously, the persistence intervals are short and the bucket sizes between persisted values are relatively constant.
+
+The default when no type is provided is `RiemannType.LEFT`.
+
+A Riemann sum is always calculated using seconds as unit for time.
+As an example, the Riemann sum of power values in `kW` will result in an energy measurement in `kWs`.
+You can rely on framework functionality to convert to the appropriate unit (e.g. `kWh`), or do an explicit conversion.
+If you use plain `Number` items and don't use units, be aware of this time multiplication factor.
 
 ### Examples
 
 To persist an Item called `Lights` in an rrd4j database, you would enter the following:
 `Lights.persist("rrd4j")`
 
-To get the average temperature over the last 5 minutes from the Item called `Temperature` in the influxdb persistence service, you would use:
-`Temperature.averageSince(now.minusMinutes(5), "influxdb")`
+To get the time of the last change of an Item `Humidity` from the default persistence service, default to the current time if the last persisted state is different from the current state:
 
-The most useful methods of the HistoricItem object returned by some queries, are `.state` and `.getTimestamp`
+```java
+var lastChange = Humidity.lastChange()
+lastChange = (lastChange !== null) ? lastChange : now
+```
+
+To get the average temperature over the last 5 minutes from the Item called `Temperature` in the influxdb persistence service, you would use:
+
+```java
+Temperature.averageSince(now.minusMinutes(5), "influxdb")`
+```
+
+To calculate the total energy consumption over the last month from an Item called `Power` in the jdbc persistence service, you can do:
+
+```java
+var today = now.truncatedTo(ChronoUnit.DAYS)
+var currentMonthStart = today.withDayOfMonth(1)
+var lastMonthStart = today.minusMonths(1).withDayOfMonth(1)
+var consumption = Power.riemannSumBetween(lastMonthStart, currentMonthStart, RiemannType.TRAPEZOIDAL, "jdbc")`
+```
+
+If `Power` is a `QuantityType<Power>` Item, `consumption` will be of `QuantityType<Energy>`.
 
 #### Time-weighted averages
 
@@ -302,7 +426,7 @@ Here are some examples:
 Lights.changedSince(now.minusMinutes(2).minusSeconds(30))
 Temperature.maximumSince(now.truncatedTo(ChronoUnit.DAYS))
 Temperature.minimumSince(parse("2012-01-01"))
-PowerMeter.historicState(now.truncatedTo(ChronoUnit.DAYS).withDayOfMonth(1))
+PowerMeter.persistedState(now.truncatedTo(ChronoUnit.DAYS).withDayOfMonth(1))
 ```
 
 The "now" variable can be used for relative time expressions, while "parse()" can define absolute dates and times.

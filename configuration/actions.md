@@ -61,7 +61,7 @@ You have different options to execute a command through an action.
   For example you could run `var ScriptResponse = executeCommandLine(Duration.ofSeconds(60), "path/to/my/script.sh");` would get executed and wait 1 minute for the output to be responded back and write it into the `ScriptResponse` variable.
 
 Other Durations than `ofSeconds` units are possible too.
-Check out the [Java Documentation](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html?is-external=true) for possible units.
+Check out the [Java Documentation](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Duration.html?is-external=true) for possible units.
 
 #### Scripts with parameters
 
@@ -99,6 +99,9 @@ var ScriptResponse = executeCommandLine(Duration.ofSeconds(60), "path/to/your/sc
 - `sendHttpPostRequest(String url, String contentType, String content, Map<String, String> headers, int timeout)`: Sends a POST-HTTP request with the given content, request headers, and timeout in ms, and returns the result as a String
 - `sendHttpDeleteRequest(String url)`: Sends a DELETE-HTTP request and returns the result as a String
 - `sendHttpDeleteRequest(String url, Map<String, String> headers, int timeout)`: Sends a DELETE-HTTP request with the given request headers, and timeout in ms, and returns the result as a String
+- `setImage(String itemName, String url)`: Downloads an image from a URL and updates the Image item's state with it. Returns `true` if successful, `false` otherwise
+- `setImage(String itemName, String url, int timeout)`: Downloads an image from a URL with a specified timeout in milliseconds and updates the Image item's state with it. Returns `true` if successful, `false` otherwise
+- `setImage(String itemName, String url, long maxContentLength, int timeout)`: Downloads an image from a URL with a specified maximum content length in bytes and timeout in milliseconds, and updates the Image item's state with it. Returns `true` if successful, `false` otherwise. Use negative values for `maxContentLength` to ignore size limits
 
 ::: tip Note
 All HTTP Actions can have a last `timeout` parameter added in ms. eg. `sendHttpPostRequest(String url, String contentType, String content, int timeout)`
@@ -220,7 +223,7 @@ if ((thingStatusInfo !== null) && (thingStatusInfo.getStatus().toString() == "ON
 
 openHAB has several subsystems that can be accessed from Rules. These include persistence, see [Persistence Extensions in Scripts and Rules]({{base}}/configuration/persistence.html#persistence-extensions-in-scripts-and-rules), transformations, scripts.
 
-- `callScript(String scriptName)`: Calls a script which must be located in the `$OPENHAB_CONF/scripts` folder.
+- `callScript(String scriptName)`: Calls a script which must be located in the `$OPENHAB_CONF/scripts` folder. `callScript` returns the value of the last expression of the script.
 
 Scripts are small pieces of Rules DSL code that can be called from Rules.
 However, Scripts have limitations.
@@ -234,40 +237,9 @@ See [Transformations]({{base}}/configuration/transformations.html#usage) for ava
 
 ## Cloud Notification Actions
 
-Notification actions may be placed in Rules to send alerts to mobile devices registered with an [openHAB Cloud instance](https://github.com/openhab/openhab-cloud) such as [myopenHAB.org](https://myopenhab.org).
-Three different actions are available:
+Notification actions may be placed in Rules to send alerts to mobile devices registered with an [openHAB Cloud instance](https://github.com/openhab/openhab-cloud) such as [myopenHAB.org](https://www.myopenhab.org).
 
-- `sendNotification(emailAddress, message)`: Sends a notification to a specific cloud instance user
-- `sendBroadcastNotification(message)`: Sends a notification to _all_ devices of _all_ users
-- `sendLogNotification(message)`: Sends a log notification to the `notifications` list at your openHAB Cloud instance.  Notifications are NOT sent to any registered devices
-
-For each of the three actions, there's another variant accepting an icon name and a severity:
-
-- `sendNotification(emailAddress, message, icon, severity)`
-- `sendBroadcastNotification(message, icon, severity)`
-- `sendLogNotification(message, icon, severity)`
-
-Icon and severity can potentially be used by cloud instance clients (such as the openHAB apps for Android or iOS) to be displayed in the list of notifications.
-
-The parameters for these actions have the following meaning:
-
-- `emailAddress`: String containing the email address the target user is registered with in the cloud instance
-- `message`: String containing the notification message text
-- `icon`: String containing the icon name (as described in [Items]({{base}}/configuration/items.html#icons))
-- `severity`: String containing a description of the severity of the incident
-
-### Example
-
-```javascript
-rule "Front Door Notification"
-when
-  Item Apartment_FrontDoor changed to OPEN
-then
-  sendNotification("me@email.com", "Front door was opened!")
-end
-```
-
-For information on making use of the [openHAB Cloud service](https://github.com/openhab/openhab-cloud/blob/main/README.md) hosted by the [openHAB Foundation e.V.](https://www.openhabfoundation.org/), visit the [myopenhab.org website](https://www.myopenhab.org).
+Please head over to [openHAB Cloud Connector: Cloud Notification Actions](/addons/integrations/openhabcloud/#cloud-notification-actions) to learn about the notification actions and check out the examples.
 
 ## Ephemeris
 
@@ -294,7 +266,7 @@ Action | Returns
 `getNextBankHoliday` | name of the next bank holiday
 `getNextBankHoliday(<file>)` | name of the next bank holiday defined in `<file>`
 `getNextBankHoliday(<offset>)` | name of the next bank holiday after `<offset>` days from today
-`getNextBankHoliday(<offset>, <file>)` | name of the next bank holiday after `<offset>` days from today defined in `<file>`. :warning: This action is broken in OH 2.5.x. Use `getNextBankHoliday(<datetime>, <file>)` instead by replacing `<datetime>` with `new DateTimeType().zonedDateTime.now().plusDays(<offset>)`
+`getNextBankHoliday(<offset>, <file>)` | name of the next bank holiday after `<offset>` days from today defined in `<file>`. :warning: This action is broken in OH 2.5.x. Use `getNextBankHoliday(<datetime>, <file>)` instead by replacing `<datetime>` with `now.plusDays(<offset>)`
 `getNextBankHoliday(<datetime>)` | name of the next bank holiday after the day defined by the `ZonedDateTime` `<datetime>`
 `getNextBankHoliday(<datetime>, <file>)` | name of the next bank holiday after the day defined by the `ZonedDateTime` `<datetime>` defined in `<file>`
 `isBankHoliday` | `true` if today is a bank holiday (see below), `false` otherwise
@@ -339,6 +311,7 @@ If there is no `dayset-weekend` defined, calls to `isWeekend` will generate erro
 Config file location: `$OH_CONF/services/ephemeris.cfg`.
 
 Fields:
+
 Field | Description
 -|-
 `country` | Country to use to get the built in list of bank holidays, uses the standard two letter country code.

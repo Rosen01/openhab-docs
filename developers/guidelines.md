@@ -130,6 +130,19 @@ public class MyCoolService {
 }
 ```
 
+### Markdown Format
+
+In order to keep documentation layout consistent, Markdown formatting rules have been defined in [.markdownlint.yaml](https://github.com/openhab/openhab-docs/blob/main/.github/.markdownlint.yaml).
+Rules are enforced automatically during the build whenever a README.md file is part of a change.
+
+To check your Markdown formatting locally, run:
+
+```shell
+mvn clean install -P check-markdown
+```
+
+Before submitting changes, it is recommended to run this check to avoid formatting issues.
+
 ## C. Documentation
 
 JavaDoc is required to describe the purpose and usage of every:
@@ -145,7 +158,7 @@ Data-transfer-objects (DTOs map from JSON/XML to Java classes) do not require Ja
 
 ## D. Language Levels and Libraries
 
-1. openHAB generally targets the long time supported Java 17 release.
+1. openHAB generally targets the long time supported Java 21 release.
 1. The [OSGi Core Release 8](https://osgi.org/download/r8/osgi.core-8.0.0.pdf) with [OSGi Compendium Release 8](https://osgi.org/download/r8/osgi.cmpn-8.0.0.pdf) is targeted, and newer features should not be used.
 1. [SLF4J](http://slf4j.org) is used for logging.
 
@@ -159,7 +172,7 @@ See [Default libraries](#default-libraries) for more details.
 1. Creation of threads must be avoided.
   Instead, resort into using existing schedulers which use pre-configured thread pools.
   If there is no suitable scheduler available, start a discussion in the forum about it rather than creating a thread by yourself.
-  For periodically executed jobs that do not require a fixed rate [scheduleWithFixedDelay](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/ScheduledExecutorService.html#scheduleWithFixedDelay(java.lang.Runnable,long,long,java.util.concurrent.TimeUnit)) should be preferred over [scheduleAtFixedRate](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/ScheduledExecutorService.html#scheduleAtFixedRate(java.lang.Runnable,long,long,java.util.concurrent.TimeUnit)).
+  For periodically executed jobs that do not require a fixed rate [scheduleWithFixedDelay](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/concurrent/ScheduledExecutorService.html#scheduleWithFixedDelay(java.lang.Runnable,long,long,java.util.concurrent.TimeUnit)) should be preferred over [scheduleAtFixedRate](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/concurrent/ScheduledExecutorService.html#scheduleAtFixedRate(java.lang.Runnable,long,long,java.util.concurrent.TimeUnit)).
 1. Bundles need to cleanly start and stop without throwing exceptions or malfunctioning.
   This can be tested by manually starting and stopping the bundle from the console (```stop <bundle-id>``` resp. ```start <bundle-id>```).
 1. Bundles must not require any substantial CPU time.

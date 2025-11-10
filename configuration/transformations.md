@@ -14,11 +14,15 @@ They are often useful, to **interpret received Item values**, like sensor readin
 - Processing of a raw Item value, e.g., Parsing a number from a JSON string, like `{ "temperature": 23.2 }`
 - Conversion of sensor readings, e.g., temperature in degree Celsius can be converted to degree Fahrenheit
 
+## Installation
+
+Transformations are performed by Transformation Services which are available as [transformation add-ons](/addons/#transform).
+The relevant add-on needs to be installed via the Main UI or addons.cfg before use.
+
 ## Usage
 
 Transformations are applicable in Item and Sitemap element labels and inside DSL rules.
-The relevant transformation service needs to be installed via the Main UI or addons.cfg before use.
-Be aware, that some Transformation services rely on transformation files, while others work by directly providing the transformation logic.
+Some Transformation services rely on transformation files, while others work by directly providing the transformation logic.
 Transformation files need to be placed in the directory `$OPENHAB_CONF/transform`.
 
 1. Item and Sitemap Labels
@@ -36,7 +40,6 @@ Transformation files need to be placed in the directory `$OPENHAB_CONF/transform
     ```
 
     Usage of Transformations in the [label parameter of Sitemap elements]({{base}}/ui/sitemaps.html#element-type-text) works the same way.
-
 1. Rules
 
     Transformations can also be [used in rules]({{base}}/configuration/rules-dsl.html#transformations) to transform/translate/convert data.
@@ -63,6 +66,7 @@ To keep these examples simple, the contents of the referenced files `window_esp.
 
 The script transformation is available from the framework and needs no additional installation.
 It allows transforming values using any of the available scripting languages in openHAB (JSR-223 or DSL).
+openHAB ensures that one and the same script transformation is not executed in parallel, there is no need to program protections against race conditions.
 
 The script needs to be placed in the `$OPENHAB_CONF/transform` folder with the native extension for the chosen language, for example `stringlength.js` for a transformation using JS Scripting.
 The script file name here acts as the `script identifier` for the script transformation.
@@ -103,6 +107,16 @@ Note the overall syntax is the same.
   var returnValue = "String has " + data.length + " characters"
   return returnValue
 })(input)
+```
+
+:::
+
+::: tab Python
+
+The script file name is `stringlength.py` and the transformation is `PY(stringlength.py)`.
+
+```python
+"String has " + str(len(input)) + " characters"
 ```
 
 :::
@@ -158,6 +172,14 @@ JS(|"String has " + input.length + " characters")
 
 :::
 
+::: tab Python
+
+```python
+PY(|"String has " + str(len(input)) + "characters")
+```
+
+:::
+
 ::: tab JRuby
 
 ```ruby
@@ -191,26 +213,31 @@ The script transformation is also available as profile. When acting as transform
 | `commandFromItemScript` | The `script identifier` for performing transformations of **commands** from the item to the Thing handler.      |
 | `stateFromItemScript`   | The `script identifier` for performing transformations of **state updates** from the item to the Thing handler. |
 
+When a script is not provided, the input for that parameter's action will be discarded, similar to when a script returned a `null` value.
+So be sure to provide a pass-through script for the relevant parameter as necessary.
+A simple inline script would work fine, e.g. `|input` would work for `JS`, `RB` and `GROOVY` scripting.
+However, beware that `stateFromItemScript` _should_ be left blank, because normally state updates aren't sent to the Thing, unless there is a specific reason otherwise.
+
 Example usage in an `.items` file:
 
-```xtend
+```java
 Number <itemName> { channel="<channelUID>"[profile="transform:JS", toItemScript="decode_json.js", commandFromItemScript="encode_json.js" ] }
 ```
 
 Here, additional parameters can also be injected into the script using the URL style syntax, e.g.:
 
-```xtend
+```java
 Number <itemName> { channel="<channelUID>"[profile="transform:RB", toItemScript="multiply.rb?factor=10", commandFromItemScript="multiply.rb?factor=0.1" ] }
 ```
 
 Inline script is also supported in the profile syntax.
 
-```xtend
+```java
 Number <itemName> { channel="<channelUID>"[profile="transform:RB", toItemScript="| input.to_f * 10", commandFromItemScript="| input.to_f * 0.1" ] }
 ```
 
 ::: tip
 
-You can find the available transformation services [here]({{base}}/adddons/#transform).
+You can find the available transformation services [here](/addons/#transform).
 
 :::

@@ -178,7 +178,7 @@ The following types are supported for configuration values: `Boolean`, `boolean`
 ### Properties
 
 _Things_ can have properties.
-If you would like to add meta data to your thing, e.g. the vendor of the thing, then you can define your own thing properties by simply adding them to the thing type definition.
+If you would like to add metadata to your thing, e.g. the vendor of the thing, then you can define your own thing properties by simply adding them to the thing type definition.
 The properties section [here](thing-xml.html#properties) explains how to specify such properties.
 
 To retrieve the properties one can call the operation `getProperties` of the corresponding `org.openhab.core.thing.type.ThingType` instance.
@@ -287,7 +287,7 @@ Of course, the polling job must be cancelled in the dispose method:
 ```java
 @Override
 public void dispose() {
-    final job = pollingJob;
+    final var job = pollingJob;
     if (job != null) {
         job.cancel(true);
         pollingJob = null;
@@ -322,7 +322,7 @@ If the device or service is not working correctly, the binding should change the
 The status can be updated via an inherited method from the BaseThingHandler class by calling:
 
 ```java
-updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.OFFLINE.COMMUNICATION_ERROR);
+updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR);
 ```
 
 The second argument of the method takes a `ThingStatusDetail` enumeration value, which further specifies the current status situation.
@@ -332,7 +332,16 @@ The binding should also provide additional status description, if available.
 This description might contain technical information (e.g. an HTTP status code, or any other protocol specific information, which helps to identify the current problem):
 
 ```java
-updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.OFFLINE.COMMUNICATION_ERROR, "HTTP 403 - Access denied");
+updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, "HTTP 403 - Access denied");
+```
+
+Some bindings may need to collect further configurations or login credentials through its servlet, hosted by openHAB.
+A link can be included in the status description when it starts with `http(s)://<YOUROPENHAB>:<YOURPORT>/` followed by binding-specific path.
+This special string will be converted in Main UI into a clickable link with the same openhab host and port that Main UI is connected to.
+For example:
+
+```java
+updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, "Please login through: http(s)://<YOUROPENHAB>:<YOURPORT>/mybinding/" + getThing().getUID().getId());
 ```
 
 After the thing is created, the framework calls the `initialize` method of the handler.
@@ -572,6 +581,8 @@ If you implement the `ThingActions` interface, you can tell the framework about 
 Please note that for actions not related to Things you will instead implement an `ActionHandler` as described in the developing [Module Types](../module-types/) chapter.
 
 You start things off by implementing `ThingActions` and annotate your class with `@ThingActionsScope`.
+The scope name should be the binding name.
+There is a limitation that **only one `ThingActions` class with the same scope per thing type** is allowed, so if you need to provide several `ThingActions` classes for a single thing type, you can append a `-xxx` to the scope names.
 Since a new service is required for each thing, the component needs to be a `PROTOTYPE`:
 
 ```java
@@ -605,12 +616,15 @@ As you can see in the above `MqttActions` implementation, the framework will cal
 
 You are now free to specify as many actions as you want in `MqttActions`.
 
-In the following example we provide a "publishMQTT" action.
-An action must be annotated with `@RuleAction`, a label and a description must be provided.
+In the following example we provide a `publishMQTT` action.
+
+If an action should be available as rule action and through the REST API (and this way also through the UI), it must be annotated with `@RuleAction` and a label and a description must be provided.
 In this case we refer to translation, see [i18n](../utils/i18n.html) support, instead of directly providing a string.
+Please think about the intended use case for your action and decide based on this whether to add the `@RuleAction` annotation.
+For example actions returning a list of future prices are very practical in automation languages, but not so much in the UI.
 
 ```java
-@RuleAction(label = "@text/actionLabel", description = "@text/actionDesc")
+    @RuleAction(label = "@text/actionLabel", description = "@text/actionDesc")
     public void publishMQTT(
             @ActionInput(name = "topic", label = "@text/actionInputTopicLabel", description = "@text/actionInputTopicDesc") @Nullable String topic,
             @ActionInput(name = "value", label = "@text/actionInputValueLabel", description = "@text/actionInputValueDesc") @Nullable String value) {
@@ -629,9 +643,43 @@ In this case we refer to translation, see [i18n](../utils/i18n.html) support, in
 Each member method also requires a static method with the same name.
 This is to support the old DSL rules engine and make the action available there.
 
-Each parameter of an action member method must be annotated with `@ActionInput`.
+If an action method is annotated with `@RuleAction`, each parameter of it must be annotated with `@ActionInput`.
+As action inputs can only be provided in serialised form by rule actions and through the REST API, only a limited set of input types are supported for those.
+If an action method has input parameters that have an unsupported type, the action cannot be used as a rule action (in UI-based rules) or invoked from the REST API.
+It can however still be invoked from automation languages.
+The supported input types are (see [`ActionInputHelper`](https://github.com/openhab/openhab-core/blob/main/bundles/org.openhab.core.automation/src/main/java/org/openhab/core/automation/util/ActionInputsHelper.java) for more details):
 
-If you return values, you do so by returning a `Map<String,Object>` and annotate the method itself with as many `@ActionOutput`s as you will return map entries.
+- all primitive types, e.g. `boolean`, `int`, `float`, `String`, and their boxed counterparts
+- `org.openhab.core.library.types.DecimalType`
+- `org.openhab.core.library.types.QuantityType`
+- `java.time.LocalDate`
+- `java.time.LocalTime`
+- `java.time.LocalDateTime`
+- `java.util.Date`
+- `java.time.ZonedDateTime`
+- `java.time.Instant`
+- `java.time.Duration`
+
+If an action method is annotated with `@RuleAction` and it returns a value, its return value needs to be annotated.
+Depending on the return type, either `@ActionOutput` or `@ActionOutputs` needs to be used.
+If you return a single value, add the `@ActionOutput` annotation.
+If you return multiple values, you do so by returning a `Map<String, Object>` and adding the `@ActionOutputs` annotation.
+Please note that it of course is still possible to return a `Map<?, Object>`, e.g. a `Map<Instant, Object>` for a collection of values with timestamps, but this return value cannot be used by rule actions (in UI-based rules) or the REST API.
+
+As the return value needs to be serialised to be sent over the REST API, only a limited set of output types are supported by the REST API.
+If an action method has a return value that has an unsupported type, the action's return value cannot be used by rule actions (in UI-based rules) or the REST API.
+The return value can still be used in automation languages.
+The supported output types are (see [`AnnotationActionHandler`](https://github.com/openhab/openhab-core/blob/main/bundles/org.openhab.core.automation/src/main/java/org/openhab/core/automation/internal/module/handler/AnnotationActionHandler.java)):
+
+- all primitive types, e.g. `boolean`, `int`, `float`, `String`, and their boxed counterparts
+- `org.openhab.core.library.types.QuantityType`
+- `java.math.BigDecimal`
+- `java.time.LocalDate`
+- `java.time.LocalTime`
+- `java.time.LocalDateTime`
+- `java.time.ZonedDateTime`
+- `java.time.Instant`
+- `java.time.Duration`
 
 ## Firmware information / Firmware update
 
@@ -661,9 +709,9 @@ To simplify the implementation of custom discovery services, an abstract base cl
 Subclasses of `AbstractDiscoveryService` do not need to handle the `DiscoveryListeners` themselves, they can use the methods `thingDiscovered` and `thingRemoved` to notify the registered listeners.
 Most of the descriptions in this chapter refer to the `AbstractDiscoveryService`.
 
-For UPnP and mDNS there already are generic discovery services available.
-Bindings only need to implement a `UpnpDiscoveryParticipant` resp. `mDNSDiscoveryParticipant`.
-For details refer to the chapters [UPnP Discovery](#upnp-discovery) and [mDNS Discovery](#mdns-discovery).
+For UPnP, mDNS and SDDP there already are generic discovery services available.
+Bindings only need to implement a `UpnpDiscoveryParticipant`, `mDNSDiscoveryParticipant` resp. `SddpDiscoveryParticipant`.
+For details refer to the chapters [UPnP Discovery](#upnp-discovery), [mDNS Discovery](#mdns-discovery) and [SDDP Discovery](#sddp-discovery).
 
 The following example is taken from the `HueLightDiscoveryService`, it calls `thingDiscovered` for each found light.
 It uses the `DiscoveryResultBuilder` to create the discovery result.
@@ -853,6 +901,7 @@ The developer has to take care about that.
 UPnP discovery is implemented in the framework as `UpnpDiscoveryService`.
 It is widely used in bindings.
 To facilitate the development, binding developers only need to implement a `UpnpDiscoveryParticipant`.
+Additionally one must add `<feature>openhab-transport-upnp</feature>` to the binding's `feature.xml` file.
 Here the developer only needs to implement three simple methods, and may optionally implement a fourth:
 
 - `getSupportedThingTypeUIDs` - Returns the list of thing type UIDs that this participant supports.
@@ -972,6 +1021,21 @@ Here the developer only needs to implement four simple methods:
     This means that the device is repeatedly removed from, and (re)added to, the Inbox.
     To prevent this, a binding may OPTIONALLY implement this method to specify an additional delay period (grace period) to wait before the device is removed from the Inbox.
     See the example code for the `getRemovalGracePeriodSeconds()` method under the "UPnP Discovery" chapter above.
+
+### SDDP Discovery
+
+SDDP discovery is implemented in the framework as `SddpDiscoveryService`.
+To facilitate the development, binding developers only need to implement a `SddpDiscoveryParticipant`.
+Additionally one must add `<feature>openhab-core-config-discovery-sddp</feature>` to the binding's `feature.xml` file.
+Here the developer only needs to implement four simple methods:
+
+- `getSupportedThingTypeUIDs` - Returns the list of thing type UIDs that this participant supports.
+    The discovery service uses this method of all registered discovery participants to return the list of currently supported thing type UIDs.
+- `getThingUID` - Creates a thing UID out of the SDDP service info or returns `null` if this is not possible.
+    This method is called from the discovery service during result creation to provide a unique thing UID for the result.
+- `createResult` - Creates the `DiscoveryResult` out of the SDDP result.
+    This method is called from the discovery service to create the actual discovery result.
+    It uses the `getThingUID` method to create the thing UID of the result.
 
 ### Discovery that is bound to a Bridge
 

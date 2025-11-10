@@ -16,7 +16,7 @@ Try [git - the simple guide](https://rogerdudler.github.io/git-guide/) as a star
 Add-ons and the openHAB core itself are written in Java.
 Java is not hard to learn, but it helps if you have a general technical understanding of programming languages.
 
-The different guides of this chapter assume that you are somewhat familiar with Java 17 and that you have a rough understanding of Git's workflow (e.g. "checkout", "branches", "push").
+The different guides of this chapter assume that you are somewhat familiar with Java 21 and that you have a rough understanding of Git's workflow (e.g. "checkout", "branches", "push").
 
 ## Choose the Right Concept
 
@@ -49,32 +49,50 @@ Please ensure that you have the following prerequisites installed as well:
 
 1. [Git](https://git-scm.com/downloads) For retrieving our source code and push changes back. On Windows: Must be available in %PATH%
 1. [Maven 3.x](https://maven.apache.org/download.cgi) Our build system tool. On Windows: Must be available in %PATH%
-1. Java JDK 17, for example from Oracle [Oracle JDK 17](https://www.oracle.com/java/technologies/javase/jdk17-archive-downloads.html). On Windows: %JAVA% must be set.
+1. Java JDK 21, for example the [Eclipse Temurin 21 JDK](https://adoptium.net/temurin/releases/?os=any&arch=any&version=21). On Windows: %JAVA% must be set.
 
 You can use any IDE that is suitable for OSGi/Java development.
 We have prepared some step-by-step guides for the following IDEs:
 
 <table style="width:100%">
 <tr>
-<td style="width:30%">
+<td style="width:50%">
 
 [![Visual Studio Code](./ide/images/vscode.jpg)](ide/vscode.html)
 
 </td>
-<td style="width:30%">
+<td style="width:50%">
 
 [![Eclipse IDE](./ide/images/eclipse.jpg)](ide/eclipse.html)
 
 </td>
-<td style="width:30%">
+</tr>
+<tr>
+<td style="width:50%">
 
 [![IntelliJ IDE](./ide/images/intellij.jpg)](ide/intellij.html)
 
 </td>
-</tr>
+<td style="width:50%">
+
+[![Generic IDE](./ide/images/generic_ide.png)](ide/generic.html)
+
 </table>
 
 Not sure what to choose?: openHAB maintainers use [Eclipse IDE](https://wiki.eclipse.org/Eclipse_Installer).
+
+## Make your own copy of the code base
+
+openHAB has [several repositories](https://github.com/openhab) on GitHub.
+The most important ones are listed in the [Contribution section of the Developer Appendix](contributing.html#the-repositories).
+
+For developing a new binding, you'll need to fork the [openhab-addons](https://github.com/openhab/openhab-addons) repository (see [GitHub Docs: Fork a repository](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/fork-a-repo)) and then clone your fork to your development machine.
+Next, create a new branch for your work on the new binding.
+
+## Read the guidelines
+
+Before starting your work, please have a look at the [Coding Guidelines](guidelines.html) and the overall [Contribution docs](contributing.html).
+It is always better to know the guidelines before starting coding than having to change your code afterwards.
 
 ## Develop a NEW binding
 
@@ -116,7 +134,7 @@ Follow these steps to generate your binding:
    - `-DskipChecks`: Skips the static analysis checks
    - `-DskipTests`: Skips the unit tests
    - `-Dspotless.check.skip=true` : Skips the spotless file formatting checks
-   - `-Dohc.version=3.0.2` : The version of openhab you are building for
+   - `-Dohc.version=5.0.0` : The version of openhab you are building for
 
 1. To start your new binding it's a good practice to commit your code on a new git branch:
 
@@ -138,3 +156,13 @@ following will tell git and spotless to use LF endings:
 ```text
 * text eol=lf
 ```
+
+Further documentation about binding development can be found in the [Bindings Developer Guide](bindings/index.html).
+
+## Contribute your changes back to openHAB
+
+When you are finished with your new binding (or in the process of development and need help), you need to create a pull request (PR) to the so-called upstream repository, in this case openhab-addons.
+Have a look at [GitHub Docs: Creating a pull request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request) if you need help.
+
+Once you have created your PR, the maintainers will review your code and provide feedback.
+Please be patient and be prepared to make changes to your code based on the feedback you receive.

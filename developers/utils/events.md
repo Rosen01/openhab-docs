@@ -40,7 +40,20 @@ The topics of openHAB events are divided into the following four parts: `{namesp
 The type of an event is represented by a string, usually the name of the concrete event implementation class, e.g. `ItemCommandEvent`, `ItemUpdatedEvent` .
 This string type presentation is used by event subscribers for event subscription (see chapter "Receive Events") and by the framework for the creation of concrete event instances.
 
-The event source is optional and represents the name of the source identifying the sender.
+The event source identifies the sender.
+Not all senders will set the source.
+The source should be structured, and of the form `<sending package>[$<actor>][=><sending package[$<actor>]]+`
+The sending package is meant to be the Java package name of the component that sent the event.
+For non-Java components generating a source (such as the Android and iOS apps), it should still be in Java package name format, as if the component were a Java package.
+The optional actor piece is an identifier of some sort that identifies the end user, device, or rule that initiated the event.
+If another event is triggered in response to an initial event, it should preserve the original source, and append (separated by `=>`) another identifier for itself.
+A few examples:
+
+- `org.openhab.ui$admin` would mean the event was initiated by a user named `admin` via Main UI.
+- `org.openhab.io.homekit$1467397f-c2e7-4b15-a7dc-315331ced2db` would mean the event was initiated from the HomeKit addon by a user identified by a UUID.
+- `org.openhab.android$my-phone=>org.openhab.io.openhabcloud$user@gmail.com` would mean the event was initiated in the Android openHAB app, and proxied through myopenhab.org using the user `user@gmail.com`.
+- `org.openhab.core.io.console=>org.openhab.core.automation$f8e461d0d9` would mean an event was sent via the Karaf console, which then triggered a rule with ID `f8e461d0d9`, triggering the current event.
+- `org.openhab.binding.mqtt$mqtt:thing:mything:mychannel` would mean an event was sent by a specific channel from the MQTT binding.
 
 #### Item Events
 
@@ -152,7 +165,7 @@ A string representation of an event type can be found by a public member `TYPE` 
 To subscribe to all available event types, use the public member `ALL_EVENT_TYPES` of the event subscriber interface.
 
 The event subscriber provides a `TopicEventFilter` which is a default openHAB `EventFilter` implementation that ensures filtering of events based on a topic.
-The argument of the filter is a [Java regular expression](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/regex/Pattern.html).
+The argument of the filter is a [Java regular expression](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/regex/Pattern.html).
 The filter method `EventFilter.apply()` will be called for each event on the event bus to which the event subscriber is subscribed (in the example above `ItemStateEvent` and `ItemCommandEvent`).
 If the filter applies (in the given example for all item events with the item name "ItemX"), the event will be received by the `EventSubscriber.receive()` method.
 Received events can be cast to the event implementation class for further processing.
@@ -167,7 +180,7 @@ The listing below summarizes some best practices in order to implement event sub
     To provide an event filter the method `getEventFilter()` can be overridden.
 - openHAB provides an `AbstractItemEventSubscriber` class in order to receive `ItemStateEvents` and `ItemCommandEvents` (more information can be obtained in the next chapter).
 - To filter events based on a topic the  `org.openhab.core.events.TopicEventFilter` implementation from the openHAB core bundle can be used.
-    The filtering is based on [Java regular expression](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/regex/Pattern.html).
+    The filtering is based on [Java regular expression](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/regex/Pattern.html).
 - The subscribed event types and the filter should be stored as class members (see example above) due to performance reasons.
 - If the subscribed event types are sufficient in order to receive all interested events, do not return any filter (in that case the method getFilter() returns null) due to performance reasons.
 - Avoid the creation of too many event subscribers.

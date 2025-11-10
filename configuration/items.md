@@ -12,10 +12,6 @@ Items can be Strings, Numbers, Switches or one of a few other basic [Item types]
 A programmer can compare Item types with base variable data types of a programming language.
 
 A unique feature of openHAB Items is the ability to connect them to the outside world via [Bindings](/addons/#binding).
-An Item does not simply store information that is set by software (e.g., `OFF`, 3.141 or "No Error"); the information stored by an Item may also be set by actions that take place in your home.
-
-But let's not get ahead of ourselves.
-The rest of this page contains details regarding Items and is structured as follows:
 
 [[toc]]
 
@@ -66,7 +62,7 @@ Switch Kitchen_Light "Kitchen Light" {channel="mqtt:topic:..." }
 String Bedroom_Sonos_CurrentTitle "Title [%s]" (gBedRoom) {channel="sonos:..."}
 Number:Power Bathroom_WashingMachine_Power "Power [%.0f W]" <energy> (gPower) {channel="homematic:..."}
 
-Number:Temperature Livingroom_Temperature "Temperature [%.1f °C]" <temperature> (gTemperature, gLivingroom) ["TargetTemperature"] {knx="1/0/15+0/0/15"}
+Number:Temperature Livingroom_Temperature "Temperature [%.1f °C]" <temperature> (gTemperature, gLivingroom) ["Setpoint", "Temperature"] {knx="1/0/15+0/0/15"}
 ```
 
 The last example above defines an Item with the following fields:
@@ -77,7 +73,7 @@ The last example above defines an Item with the following fields:
 - Item [state formatted](#state-presentation) to display temperature in Celsius to one-tenth of a degree -  for example, "21.5 °C"
 - Item [icon](#icons) with the name `temperature`
 - Item belongs to [groups](#groups) `gTemperature` and `gLivingroom` (definition not shown in the example)
-- Item is [tagged](#tags) as a thermostat with the ability to set a target temperature ("TargetTemperature")
+- Item is [tagged](#tags) as a thermostat with the ability to set a target temperature ("Setpoint", "Temperature")
 - Item is [bound to](/addons/#binding) the openHAB Binding `knx` with binding specific settings ("1/0/15+0/0/15")
 
 The remainder of this article provides additional information regarding Item definition fields.
@@ -261,7 +257,7 @@ If no square brackets are given and the Item is not linked to a channel, the Ite
 No text between the square brackets also implies no textual presentation.
 This is often meaningful when an Item is presented by a non-textual UI elements like a switch or a diagram.
 
-Formatting of the presentation is done applying [Java formatter class syntax](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Formatter.html#syntax).
+Formatting of the presentation is done applying [Java formatter class syntax](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Formatter.html#syntax).
 
 If square brackets are given, the leading `%` and the trailing formatter conversion are mandatory.
 Free text, like a unit, can be added before or after the formatter string.
@@ -428,6 +424,7 @@ The default icon will be used for negative numbers, or above 100 i.e. the availa
 Dimmer type Items work in the same way, being limited to 0-100 anyway.
 
 For a dimmable light (0-100%), you might provide icons as in the example:
+
 | File name         | Description                                          |
 | ----------------- | ---------------------------------------------------- |
 | `mydimmer.svg`    | Default icon (used in undefined states)              |
@@ -505,13 +502,13 @@ Group[:itemtype[:function]] groupname ["labeltext"] [<iconname>] [(group1, group
 
 Group state aggregation functions can be any of the following:
 
-|     | Function                   | Parameters                    | Base Item                                   | Description                                                                                                                                                                                                           |     |
-| --- | -------------------------- | ----------------------------- | ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --- |
-|     | `EQUALITY`                 | -                             | \<all\>                                     | Default if no function is specified. Sets the state of the members if all have equal state. Otherwise `UNDEF` is set. In the Item DSL `EQUALITY` is the default and may be omitted.                                   |     |
-|     | `AND`, `OR`, `NAND`, `NOR` | <activeState>, <passiveState> | \<all\> (must match active & passive state) | [Boolean](https://en.wikipedia.org/wiki/Boolean_algebra) operation. Sets the \<activeState\>, if the members state \<activeState\> evaluates to `true` under the boolean term. Otherwise the \<passiveState\> is set. |     |
-|     | `SUM`, `AVG`, `MIN`, `MAX` | -                             | Number                                      | [Arithmetic](https://en.wikipedia.org/wiki/Arithmetic) operation. Sets the state according to the arithmetic function over all members states.                                                                        |     |
-|     | `COUNT`                    | <regular expression>          | Number                                      | Sets the state to the number of members matching the given regular expression with their states.                                                                                                                      |     |
-|     | `LATEST`, `EARLIEST`       | -                             | DateTime                                    | Sets the state to the latest/earliest date from all members states                                                                                                                                                    |     |
+|     | Function                             | Parameters                    | Base Item                                   | Description                                                                                                                                                                                                           |     |
+| --- | ------------------------------------ | ----------------------------- | ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --- |
+|     | `EQUALITY`                           | -                             | \<all\>                                     | Default if no function is specified. Sets the state of the members if all have equal state. Otherwise `UNDEF` is set. In the Item DSL `EQUALITY` is the default and may be omitted.                                   |     |
+|     | `AND`, `OR`, `NAND`, `NOR`, `XOR`    | <activeState>, <passiveState> | \<all\> (must match active & passive state) | [Boolean](https://en.wikipedia.org/wiki/Boolean_algebra) operation. Sets the \<activeState\>, if the members state \<activeState\> evaluates to `true` under the boolean term. Otherwise the \<passiveState\> is set. |     |
+|     | `SUM`, `AVG`, `MEDIAN`, `MIN`, `MAX` | -                             | Number                                      | [Arithmetic](https://en.wikipedia.org/wiki/Arithmetic) operation. Sets the state according to the arithmetic function over all members states.                                                                        |     |
+|     | `COUNT`                              | <regular expression>          | Number                                      | Sets the state to the number of members matching the given regular expression with their states.                                                                                                                      |     |
+|     | `LATEST`, `EARLIEST`                 | -                             | DateTime                                    | Sets the state to the latest/earliest date from all members states                                                                                                                                                    |     |
 
 Boolean group state functions additionally return a number representing the count of member Items of value 'value1' (see example below).
 
@@ -528,22 +525,24 @@ Examples for derived states on Group Items when declared in the Item DSL:
 Group:Number                  Lights       "Active Lights [%d]"              // e.g. "2"
 Group:Switch:OR(ON,OFF)       Lights       "Active Lights [%d]"              // e.g. ON and "2"
 Group:Switch:AND(ON,OFF)      Lights       "Active Lights [%d]"              // e.g. ON and "2"
+Group:Switch:XOR(ON,OFF)      Lights       "Active Lights [%d]"              // e.g. ON and "1"
 Group:Number:Temperature:AVG  Temperatures "All Room Temperatures [%.1f °C]" // e.g. "21.3 °C"
 Group:DateTime:EARLIEST       LatestUpdate "Latest Update [%1$tY.%1$tm.%1$tY %1$tH:%1$tM:%1$tS]"
 Group:DateTime:LATEST         LastSeen     "Last Seen [%1$tY.%1$tm.%1$tY %1$tH:%1$tM:%1$tS]"
 Group:Number:COUNT("OFFLINE") OfflineDevices "Offline Devices [%d]"     // e.g. "2"
 ```
 
-The first three examples above compute the number of active lights and store them as group state.
+The first four examples above compute the number of active lights and store them as group state.
 However, the second group is of type switch and has an aggregation function of `OR`.
 This means that the state of the group will be `ON` as soon as any of the member lights are turned on.
 The third uses `AND` and sets the Group state to `ON` if all of its members have the state `ON`, `OFF` if any of the Group members has a different state than `ON`.
+The fourth uses `XOR` where the Group state is only `ON`, if exactly one light is `ON`.
 
 Groups do not only aggregate information from individual member Items, they can also accept commands.
 Sending a command to a Group causes the command to be sent to all Group members.
 An example of this is shown by the second group above; sending a single `ON` or `OFF` command to that group turns all lights in the group on or off.
 
-The fourth example computes the average temperature of all room temperature Items in the group.
+The fifth example computes the average temperature of all room temperature Items in the group.
 
 Assuming we have a Group containing three timestamps: `now().minusDays(10)`, `now()` and `now().plusSeconds(30)`.
 The `EARLIEST` function returns `now().minusDays(10)`, the `LATEST` function returns `now().plusSeconds(30)`.
@@ -554,11 +553,12 @@ The last Group counts all members of it matching the given regular expression, h
 
 Tags added to an Item definition allow a user to characterize the specific nature of the Item beyond its basic Item type.
 Tags can then be used by add-ons to interact with Items in context-sensitive ways.
-Tags are used by the [Semantic Model]({{base}}/tutorial/model.html).  The `"Light"` example below maps the item to the Semantic Model.
+Tags are used by the [Semantic Model]({{base}}/tutorial/model.html).
+The `"Light"` example below maps the item to the Semantic Model.
 
 Example:
 A Light in a typical home setup can be represented by a Switch, a Dimmer or a Color Item.
-To be able to interact with the light device via a natural voice command, for example, the fact that the Item is a light can be established by adding the "Lighting" tag as shown below.
+To be able to interact with the light device via a natural voice command, for example, the fact that the Item is a light can be established by adding the "Light" tag as shown below.
 
 ```java
 Switch Livingroom_Light "Livingroom Ceiling Light" ["Light"]
@@ -567,6 +567,26 @@ Switch Livingroom_Light "Livingroom Ceiling Light" ["Light"]
 The easiest way to determine if tags have been implemented in a specific add-on is to see if the add-on documentation explicitly discusses their usage.
 
 See the [Hue Emulation Service](/addons/integrations/hueemulation/) or [HomeKit Add-on](/addons/integrations/homekit/) documentation for more details.
+
+#### Channel Default Tags
+
+As mentioned above, many bindings have preset recommended default tags on their channels.
+And if you define Items via an `.items` file, you can optionally set the channel link to import these tags.
+There are two ways to do this:
+
+1. Individual per Item configuration: apply `useTags` on each respective Items' channel link definition:
+
+    ```java
+    Switch Livingroom_Light "Livingroom Ceiling Light" {channel="hue:device:bridge:light:color" [useTags=true] }
+    ```
+
+1. System wide global configuration for all Items: apply `useTags` in your `conf/services/runtime.cfg` file:
+
+    ```java
+    org.openhab.ItemChannelLinkRegistry:useTags=true
+    ```
+
+Note that if an item has multiple channel links with `useTags=true` (or `useTags` is set globally) then the system applies the tags from the first link, and subsequent links will cause a warning message in the logs.
 
 ### Binding Configuration
 
@@ -668,22 +688,49 @@ This parameter allows to post an update or command to an item after a period of 
 
 The expiration timer is started or restarted every time an item receives an update or a command _other than_ the specified "expire" update/command.
 Any future expiring update or command is cancelled, if the item receives an update or command that matches the "expire" update/command.
+See `ignoreStateUpdate` and `ignoreCommands` [configurations](#configurations-for-expire) below.
 
-The parameter accepts a duration of time that can be a combination of hours, minutes and seconds in the format
+The parameter accepts a duration of time expressed as a combination of days, hours, minutes, seconds, and milliseconds. The format follows the structure: `Xd Xh Xm Xs Xms` where:
+
+- Each `X` is a long integer
+- At least one segment must be specified, and any included segments must appear in the following order: **days**, **hours**, **minutes**, **seconds**, **milliseconds**
+- Whitespace is allowed between segments
+- A space between the number and its unit is permitted but not required
+
+Unit names may use short or extended forms:
+
+| Unit         | Accepted Variants                       |
+|--------------|-----------------------------------------|
+| Days         | `d`, `day`, `days`                      |
+| Hours        | `h`, `hr`, `hrs`, `hour`, `hours`       |
+| Minutes      | `m`, `min`, `mins`, `minute`, `minutes` |
+| Seconds      | `s`, `sec`, `secs`, `second`, `seconds` |
+| Milliseconds | `ms`, `millisecond`, `milliseconds`     |
 
 ```shell
 expire="1h 30m 45s"
 expire="1h05s"
+expire="1 h 5 seconds"
 expire="55h 59m 12s"
+expire="55 hours 59 min 12 sec"
+expire="2d 7h 59m 12s"
+expire="2 day 7 h 59 minutes 12 seconds"
+expire="5000 milliseconds"
 ```
 
-Every part is optional, but all parts present must be in the given order (hours, minutes, seconds).
-Whitespaces are allowed between the sections.
+Alternatively, the duration can be specified using a restricted subset of the [ISO 8601 Duration format](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/Duration.html#parse(java.lang.CharSequence)). Only non-negative durations are supported, and valid units are limited to days, hours, minutes, and seconds. While ISO 8601 allows fractional seconds, the openHAB expire feature enforces a minimum granularity of one second.
+
+```shell
+expire="PT1H30M45S"
+expire="PT1H5S"
+expire="PT55H59M12S"
+expire="P2DT7H59M12S"
+```
 
 This duration can optionally be followed by a comma and the state or command to post, when the timer expires.
 If this optional section is not present, it defaults to the Undefined (`UnDefType.UNDEF`) state.
 
-```shell
+```java
 Player MyPlayer   { expire="1h,command=STOP" }                // send STOP command after one hour
 Number MyChannel  { channel="xxx", expire="5m,state=0" }      // update state to 0 after five minutes
 String MyMessage  { channel="xxx", expire="3m12s,Hello" }     // update state to Hello after three minutes and 12 seconds
@@ -694,6 +741,28 @@ Note that the `state=` part is optional.
 
 In the special case of a String item, it is possible to define a state/command as the string "UNDEF" or "NULL" by putting it into single quotes (e.g. "1m,state='UNDEF'").
 Without the quotes, the state would be the system type `UNDEF`.
+
+###### Configurations for `expire`
+
+The `expire` parameter is stored as an item metadata which supports the following configurations:
+
+| Configuration Parameter | Description                                                                                                                  |
+|:------------------------|:-----------------------------------------------------------------------------------------------------------------------------|
+| `duration`              | The expire duration as described above.                                                                                      |
+| `command`               | The command to send when the timer expires.                                                                                  |
+| `state`                 | The state to change the item to when the timer expires. This is mutually exclusive to the `command` parameter.               |
+| `ignoreStateUpdate`     | When set to true, do not reset or restart the expire timer when the item received a state update event. Defaults to `false`. |
+| `ignoreCommands`        | When set to true, do not reset or restart the timer when the item received a command. Defaults to `false`.                   |
+
+Examples:
+
+```java
+// These four definitions are equivalent
+Number MyChannel  { expire="5m,state=0" }
+Number MyChannel  { expire="5m,0" }
+Number MyChannel  { expire="5m" [state=0] }
+Number MyChannel  { expire="" [duration="5m", state=0] }
+```
 
 #### Profiles
 
@@ -719,7 +788,7 @@ If this is the case, you will find those within the documentation of the Binding
 | `offset`                                                                                      | State   | Number                | An offset can be specified via the parameter `offset` which has to be a `QuantityType` or `DecimalType`. The specified offset will be applied to the value from the device before it arrives at the Item.                                                                                                                                                                                                                                                                                                                                                |
 | `range`                                                                                       | State   | Switch                | The `range` Profile can be used to trigger alarms when number values exceed given limits (`lower` and `upper` bounds). It sends ON to a Switch Item. There are three parameters: `lower` and `upper` (**mandatory**) `QuantityType` or `DecimalType` and `inverted` (optional) `boolean`.                                                                                                                                                                                                                                                                |
 | `timestamp-change`                                                                            | State   | DateTime              | This Profile will update a DateTime Item to track every change of the state of a given Channel.                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| `timestamp-offset`                                                                            | State   | DateTime              | This Profile can be specified via the parameter `offset` (in seconds) which has to be a `DecimalType`. The specified offset will be applied to the date time before it is passed to the Item. Additionally it allows to modify the timezone by setting the parameter of the same name (e.g. "Europe / Berlin").                                                                                                                                                                                                                                          |
+| `timestamp-offset`                                                                            | State   | DateTime              | This Profile can be specified via the parameter `offset` (in seconds) which has to be a `DecimalType`. The specified offset will be applied to the date time before it is passed to the Item.                                                                                                                                                                                                                                                                                                                                                            |
 | `timestamp-update`                                                                            | State   | DateTime              | This Profile will update a DateTime Item to track every update of the state of a given Channel, whatever the state is.                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `rawbutton-on-off-switch`                                                                     | Trigger | Color, Dimmer, Switch | This Profile can only be used on Channels of the type `system.rawbutton`. On those Channels, it will set the Item state to `ON` when a `PRESSED` event arrives and to `OFF` when a `RELEASED` event arrives.                                                                                                                                                                                                                                                                                                                                             |
 | `rawbutton-toggle-player`                                                                     | Trigger | Player                | This Profile can only be used on Channels of the type `system.rawbutton`. On those Channels, it will toggle the Player Item state between `PLAY` and `PAUSE` when `PRESSED` events arrive.                                                                                                                                                                                                                                                                                                                                                               |
